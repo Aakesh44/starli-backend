@@ -1,0 +1,11 @@
+export const TOKEN_CONFIG = {
+    ACCESS_TOKEN_EXPIRES_IN: "15m",
+    REFRESH_TOKEN_EXPIRES_IN_DAYS: 7, // days
+    EMAIL_VERIFICATION_TOKEN_EXPIRES_IN: "10m",
+    PASSWORD_RESET_TOKEN_EXPIRES_IN: "15m"
+} as const;
+
+export const OTP_CONFIG = {
+    LENGTH: 6,
+    EXPIRES_IN_MINUTES: 5
+} as const;
