@@ -1,8 +1,8 @@
-export class AppError extends Error{
-    constructor(public message: string, public statusCode = 400){
+export class AppError extends Error {
+    constructor(public message: string, public statusCode = 400) {
         super(message);
     }
-}
+};
 
 export const BadRequest = (msg = "Bad request") => new AppError(msg, 400);
 export const Unauthorized = (msg = "Unauthorized") => new AppError(msg, 401);

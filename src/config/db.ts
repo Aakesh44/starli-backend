@@ -1,6 +1,7 @@
 import mongoose from "mongoose";
 
-async function  connectDB(uri: string) {
+async function connectDB(uri: string) {
+    console.log("Connecting to database...");
     try {
 
         await mongoose.connect(uri);
@@ -16,15 +17,15 @@ async function  connectDB(uri: string) {
         mongoose.connection.on("error", (error) => {
             console.log("Error connecting to database", error);
         });
-        
+
     } catch (error) {
-        console.log("Failed to connect to database", error);
+        console.log("❌ Failed to connect to database", error);
     }
 };
 
 async function closeDB() {
     await mongoose.connection.close();
-    console.log("Database connection closed");
+    console.log("❌ Database connection closed");
 }
 
 export { connectDB, closeDB };

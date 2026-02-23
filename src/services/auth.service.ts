@@ -2,15 +2,17 @@ import { OTP_CONFIG, TOKEN_CONFIG } from "../config/constants.js";
 import { RefreshToken } from "../models/refreshToken.model.js";
 import authRepository from "../repositories/auth.repository.js";
 import userRepository from "../repositories/user.repository.js"
+import { mapUserResponse } from "../repositories/utils/mappers/user.mapper.js";
 import { BadRequest, Conflict } from "../utils/errors.js";
+import { generateTempUsername } from "../utils/exctra-utils.js";
 import getGoogleUser from "../utils/google.js";
 import { signJWT, verifyJWT } from "../utils/jwt.js";
 import { generateOTP } from "../utils/otp.js";
 
-const createTokens = async (userId: string) => {
+const createTokens = async (userId: string, role: string) => {
 
-    const access_token = signJWT({ userId }, { expiresIn: TOKEN_CONFIG.ACCESS_TOKEN_EXPIRES_IN });
-    const refresh_token = signJWT({ userId }, { expiresIn: `${TOKEN_CONFIG.REFRESH_TOKEN_EXPIRES_IN_DAYS}d` });
+    const access_token = signJWT({ userId, role }, { expiresIn: TOKEN_CONFIG.ACCESS_TOKEN_EXPIRES_IN });
+    const refresh_token = signJWT({ userId, role }, { expiresIn: `${TOKEN_CONFIG.REFRESH_TOKEN_EXPIRES_IN_DAYS}d` });
 
     console.log("access_token:", access_token);
     console.log("refresh_token:", refresh_token);
@@ -34,10 +36,12 @@ const signup = async (email: string, password: string) => {
         throw Conflict("Email already exists");
     }
 
+    const tempUserName = generateTempUsername(email.split("@")[0] || "user");
+
     const otp = generateOTP();
     const otpExpires = new Date(Date.now() + 5 * 60 * 1000);
 
-    const user = await authRepository.createUser(email, password, otp, otpExpires);
+    const user = await authRepository.createUser(email, password, tempUserName, otp, otpExpires);
     const token = signJWT({ email: user.email }, { expiresIn: "5Mins" });
 
     return { user, otp, token };
@@ -56,6 +60,10 @@ const login = async (email: string, password: string) => {
     }
 
     if (!user.password && user.googleSub) {
+
+        return {
+            code: "ACCOUNT_EXISTS_WITH_GOOGLE",
+        }
         throw BadRequest("This account was created using Google, please login using Google");
     }
 
@@ -93,34 +101,61 @@ const login = async (email: string, password: string) => {
 
     console.log("User is verified, generating tokens");
 
-    const { access_token, refresh_token } = await createTokens(user?._id as string);
+    const { access_token, refresh_token } = await createTokens(user?._id as string, user.role);
 
     return { user, access_token, refresh_token, needsVerification: false };
 }
 
 const google = async (idToken: string) => {
 
+    console.log('🔥 idToken:', idToken);
+
     const payload = await getGoogleUser(idToken);
+
+    console.log('🔥 payload:', payload);
 
     if (!payload || !payload.email) {
         throw BadRequest("Invalid google token");
     }
 
-    const filter = { googleSub: payload.sub };
+    let user = await userRepository.getUserByGoogleSub(payload.sub);
 
-    const update = {
-        email: payload.email,
-        name: payload.name,
-        picture: payload.picture,
-        googleSub: payload.sub,
-        verified: payload.email_verified
-    };
+    console.log('🔥 user:', user);
 
-    const user = await userRepository.googleLogin(filter, update);
+    // Existing user update
+    if (user) {
 
-    const { access_token, refresh_token } = await createTokens(user._id as string);
+        user = await userRepository.updateUser(user._id, {
+            name: payload.name,
+            picture: payload.picture,
+            verified: payload.email_verified
+        })
+    }
 
-    return { user, access_token, refresh_token };
+    const emailUser = await userRepository.getUser(payload.email);
+
+    if (emailUser && !user) {
+        throw Conflict("ACCOUNT_EXISTS_WITH_PASSWORD");
+    }
+
+    // New user
+
+    if (!user) {
+        user = await userRepository.createUser({
+            email: payload.email,
+            name: payload.name,
+            picture: payload.picture,
+            googleSub: payload.sub,
+            verified: payload.email_verified,
+            password: null,
+            username: generateTempUsername(payload.name || "user")
+        })
+    }
+
+    const { access_token, refresh_token } = await createTokens(user._id as string, user.role);
+
+
+    return { user: mapUserResponse(user), access_token, refresh_token };
 }
 
 const logout = async (req: Request, res: Response) => {
@@ -151,7 +186,7 @@ const verifyEmail = async (token: string, otp: string) => {
 
     await user.save();
 
-    const { access_token, refresh_token } = await createTokens(user._id as string);
+    const { access_token, refresh_token } = await createTokens(user._id as string, user.role);
 
     return { user, access_token, refresh_token };
 }

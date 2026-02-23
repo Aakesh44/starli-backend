@@ -5,7 +5,7 @@ import { BadRequest } from '../utils/errors.js';
 const signup = async (req: Request, res: Response, next: NextFunction) => {
     try {
 
-        const { email, password } = req.body;
+        const { email, password } = req.validated?.body;
 
         const { otp, token } = await authService.signup(email, password);
 
@@ -25,10 +25,17 @@ const login = async (req: Request, res: Response, next: NextFunction) => {
 
     try {
 
-        const { email, password } = req.body;
+        const { email, password } = req.validated?.body;
 
-        const { user, needsVerification, token, otp, access_token, refresh_token } = await authService.login(email, password);
+        const { user, needsVerification, token, otp, access_token, refresh_token, code } = await authService.login(email, password);
 
+        if (code === "ACCOUNT_EXISTS_WITH_GOOGLE") {
+            return res.status(400).json({
+                success: false,
+                code,
+                message: "This account was created using Google, please login using Google"
+            })
+        }
         if (needsVerification) {
             return res.status(403).json({
                 success: false,
@@ -58,7 +65,10 @@ const login = async (req: Request, res: Response, next: NextFunction) => {
 const googleLogin = async (req: Request, res: Response, next: NextFunction) => {
     try {
 
-        const { idToken } = req.body;
+        console.log('req.body:', req.body);
+        console.log('req.body:', req.validated?.body);
+
+        const { idToken } = req.validated?.body;
 
         if (!idToken) {
             throw BadRequest("Id token is required");
@@ -86,7 +96,7 @@ const logout = async (req: Request, res: Response) => {
 const verifyEmail = async (req: Request, res: Response, next: NextFunction) => {
     try {
 
-        const { token, otp } = req.body;
+        const { token, otp } = req.validated?.body;
 
         const { user, access_token } = await authService.verifyEmail(token, otp);
 
@@ -105,7 +115,7 @@ const verifyEmail = async (req: Request, res: Response, next: NextFunction) => {
 const validateEmailForReset = async (req: Request, res: Response, next: NextFunction) => {
     try {
 
-        const { email } = req.body;
+        const { email } = req.validated?.body;
 
         const { user, token, otp } = await authService.validateEmailForReset(email);
 
@@ -125,7 +135,7 @@ const validateEmailForReset = async (req: Request, res: Response, next: NextFunc
 const validateOtp = async (req: Request, res: Response, next: NextFunction) => {
     try {
 
-        const { token, otp } = req.body;
+        const { token, otp } = req.validated?.body;
 
         await authService.validateOtp(token, otp);
 
@@ -142,7 +152,7 @@ const validateOtp = async (req: Request, res: Response, next: NextFunction) => {
 const sendOtp = async (req: Request, res: Response, next: NextFunction) => {
     try {
 
-        const { token } = req.body;
+        const { token } = req.validated?.body;
 
         const { otp } = await authService.sendOtp(token);
 
@@ -156,7 +166,7 @@ const sendOtp = async (req: Request, res: Response, next: NextFunction) => {
 const resetPassword = async (req: Request, res: Response, next: NextFunction) => {
     try {
 
-        const { token, password } = req.body;
+        const { token, password } = req.validated?.body;
 
         await authService.resetPassword(token, password);
 

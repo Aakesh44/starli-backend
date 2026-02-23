@@ -1,0 +1,10 @@
+export { default as authRouter } from "./auth.route.js";
+export { default as postRouter } from "./post.route.js";
+export { default as commentRouter } from "./comment.routes.js";
+export { default as reshareRouter } from "./reshare.route.js";
+export { default as bookmarkRouter } from "./bookmark.route.js";
+export { default as reactionRouter } from "./reaction.route.js";
+export { default as draftRouter } from "./draft.route.js";
+export { default as scheduledPostRouter } from "./scheduled.route.js";
+export { default as followRouter } from "./follow.route.js";
+export { default as userRouter } from "./user.route.js";

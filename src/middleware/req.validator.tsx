@@ -1,25 +1,26 @@
-import {ZodObject} from "zod";
-import type { Request, Response, NextFunction} from 'express';
+import { ZodObject } from "zod";
+import type { Request, Response, NextFunction } from 'express';
 
-export const validateRequest = 
-    (schema: ZodObject<any>) => 
+export const validateRequest =
+    (schema: ZodObject<any>) =>
         (req: Request, res: Response, next: NextFunction) => {
-    
+
             const result = schema.safeParse({
                 body: req.body,
                 query: req.query,
                 params: req.params
             });
 
-            if(!result.success){
+            if (!result.success) {
                 const errors = result.error.issues.map(i => ({
                     field: i.path.join("."),
                     message: i.message
                 }));
 
-                return res.status(400).json({success: false, errors});
+                return res.status(400).json({ success: false, errors });
             }
 
-            req.body = result.data.body;
+            req.validated = result.data;
+
             next();
-}
+        }
