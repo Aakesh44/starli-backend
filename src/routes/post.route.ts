@@ -19,7 +19,12 @@ postRouter.get(
     validateRequest(postRequestSchema.getPostsSchema),
     postController.get
 );
-// postRouter.get('/:id',);
+
+postRouter.get(
+    '/:id',
+    validateRequest(postRequestSchema.getPostByIdSchema),
+    postController.getPostById
+);
 
 postRouter.post(
     '/',

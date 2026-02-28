@@ -1,6 +1,7 @@
 import type { NextFunction, Request, Response } from 'express';
 import authService from '../services/auth.service.js'
 import { BadRequest } from '../utils/errors.js';
+import type { AuthenticatedRequest } from '../middleware/auth.middleware.js';
 
 const signup = async (req: Request, res: Response, next: NextFunction) => {
     try {
@@ -78,7 +79,7 @@ const googleLogin = async (req: Request, res: Response, next: NextFunction) => {
 
         return res.status(200).json({
             success: true,
-            user: { ...user, image: user.picture },
+            user: { ...user, image: user?.picture },
             access_token,
             refresh_token,
             message: "Login successful"
@@ -89,8 +90,18 @@ const googleLogin = async (req: Request, res: Response, next: NextFunction) => {
     }
 }
 
-const logout = async (req: Request, res: Response) => {
+const logout = async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+    try {
 
+        const userId = req.user?.userId!;
+
+        await authService.logout(userId);
+
+        return res.status(200).json({ success: true, message: "Logout successful" });
+
+    } catch (error) {
+        next(error);
+    }
 }
 
 const verifyEmail = async (req: Request, res: Response, next: NextFunction) => {

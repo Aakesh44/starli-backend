@@ -25,6 +25,12 @@ const getPostsSchema = z.object({
     })
 });
 
+const getPostByIdSchema = z.object({
+    params: z.object({
+        id: z.string().min(1, "Post id is required"),
+    })
+})
+
 const createPostSchema = z.object({
     body: z.object({
         title: z.string().min(3, "Title must be at least 3 characters long").max(100, "Title must be at most 100 characters long"),
@@ -73,6 +79,12 @@ const deletePostSchema = z.object({
     })
 });
 
-const postRequestSchema = { getPostsSchema, createPostSchema, updatePostSchema, deletePostSchema };
+const postRequestSchema = {
+    getPostsSchema,
+    getPostByIdSchema,
+    createPostSchema,
+    updatePostSchema,
+    deletePostSchema
+};
 
 export default postRequestSchema;

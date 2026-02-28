@@ -1,7 +1,7 @@
 import type { IPost } from '../../../models/post.model.js';
 
 // utils/mappers/post.mapper.ts
-export const mapPostResponse = (post: IPost) => ({
+export const mapPostResponse = (post: IPost) => (post ? {
     id: post._id.toString(),
     title: post.title,
     content: post.content,
@@ -14,4 +14,4 @@ export const mapPostResponse = (post: IPost) => ({
     createdAt: post.createdAt,
     updatedAt: post.updatedAt,
     scheduledAt: post.scheduledAt
-});
+} : null);

@@ -80,6 +80,12 @@ const getPosts = async ({
     }
 }
 
+const getPostById = async (id: string) => {
+
+    const post = await Post.findById(id).select("-__v -isDeleted -deletedAt").lean().populate("author");
+    return mapPostResponse(post as any);
+}
+
 const createPost = async (data: CreatePostInput) => {
 
     const created = await Post.create(data);
@@ -113,6 +119,7 @@ const deletePost = async (id: string, author: string) => {
 
 const postRepository = {
     getPosts,
+    getPostById,
     createPost,
     updatePosts,
     deletePost

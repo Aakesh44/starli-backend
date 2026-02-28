@@ -25,6 +25,26 @@ const get = async (req: AuthenticatedRequest, res: Response, next: NextFunction)
     }
 };
 
+const getPostById = async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+    try {
+
+        const { id: postId } = req.validated?.params;
+
+        if (!postId) throw BadRequest("Post id is required");
+
+        const post = await postService.getPostById(postId);
+
+        return res.status(200).json({
+            post,
+            success: true,
+            message: "Post fetched successfully"
+        });
+
+    } catch (error) {
+        next(error);
+    }
+}
+
 const create = async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
     try {
 
@@ -113,6 +133,7 @@ const deletePost = async (req: AuthenticatedRequest, res: Response, next: NextFu
 
 const postController = {
     get,
+    getPostById,
     create,
     update,
     deletePost

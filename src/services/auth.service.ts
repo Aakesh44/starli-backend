@@ -158,8 +158,9 @@ const google = async (idToken: string) => {
     return { user: mapUserResponse(user), access_token, refresh_token };
 }
 
-const logout = async (req: Request, res: Response) => {
+const logout = async (userId: string) => {
 
+    await authRepository.logout(userId);
 }
 
 const verifyEmail = async (token: string, otp: string) => {

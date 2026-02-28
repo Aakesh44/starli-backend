@@ -1,3 +1,4 @@
+import { RefreshToken } from "../models/refreshToken.model.js";
 import { User } from "../models/user.model.js"
 
 const createUser = async (email: string, password: string, tempUserName: string, otp: string, otpExpires: Date) => {
@@ -9,10 +10,14 @@ const createUser = async (email: string, password: string, tempUserName: string,
         otp,
         otpExpires
     });
-}
+};
 
+const logout = async (userId: string) => {
+    return await RefreshToken.deleteOne({ user: userId });
+}
 const authRepository = {
-    createUser
+    createUser,
+    logout
 };
 
 export default authRepository;

@@ -11,9 +11,9 @@ authRouter.post("/google/", validateRequest(authRequestSchema.googleLoginSchema)
 // authRouter.post("/google/link/", validateRequest(authRequestSchema.googleLinkSchema), authController.googleLink)
 authRouter.post("/logout/", authController.logout)
 authRouter.post("/verify-email/", validateRequest(authRequestSchema.verifyOtpSchema), authController.verifyEmail)
-authRouter.post("/validate-email-for-reset-password/", authController.validateEmailForReset)
-authRouter.post("/validate-otp/", authController.validateOtp)
-authRouter.post("/reset-password/", authController.resetPassword)
-authRouter.post("/resend-otp/", authController.sendOtp)
+authRouter.post("/validate-email-for-reset-password/", validateRequest(authRequestSchema.validateEmailForResetSchema), authController.validateEmailForReset)
+authRouter.post("/validate-otp/", validateRequest(authRequestSchema.validateOtpSchema), authController.validateOtp)
+authRouter.post("/reset-password/", validateRequest(authRequestSchema.resetPasswordSchema), authController.resetPassword)
+authRouter.post("/resend-otp/", validateRequest(authRequestSchema.resendOtpSchema), authController.sendOtp)
 
 export default authRouter;

@@ -83,6 +83,11 @@ const get = async (data: {
         sort
     });
 
+};
+
+const getPostById = async (postId: string) => {
+
+    return await postRepository.getPostById(postId);
 }
 
 const create = async (data: {
@@ -141,6 +146,7 @@ const deletePost = async (postId: string, userId: string,) => {
 
 const postService = {
     get,
+    getPostById,
     create,
     update,
     deletePost
