@@ -18,8 +18,8 @@ const updateUserProfileScema = z.object({
         name: z.string().min(3, "Name must be at least 3 characters long").max(100, "Name must be at most 100 characters long"),
         username: z.string().min(3, "Username must be at least 3 characters long").max(100, "Username must be at most 100 characters long"),
         bio: z.string().min(3, "Bio must be at least 3 characters long").max(120, "Bio must be at most 1000 characters long"),
-        location: z.string().min(3, "Location must be at least 3 characters long").max(100, "Location must be at most 100 characters long").optional(),
-        personal_website: z.string().min(3, "Personal website must be at least 3 characters long").max(100, "Personal website must be at most 100 characters long").optional(),
+        location: z.string().trim().min(3, "Location must be at least 3 characters long").max(100, "Location must be at most 100 characters long").optional().or(z.literal('')),
+        personal_website: z.string().trim().min(3, "Personal website must be at least 3 characters long").max(100, "Personal website must be at most 100 characters long").optional().or(z.literal('')),
         social_links: z.object({
             github: z.url().optional().or(z.literal('')),
             figma: z.url().optional().or(z.literal('')),

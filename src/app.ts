@@ -5,7 +5,7 @@ import helmet from "helmet";
 import morgan from "morgan";
 import { errorHandler } from './middleware/error.middleware.js';
 import { authenticate } from './middleware/auth.middleware.js';
-import { authRouter, postRouter, userRouter, followRouter } from "./routes/index.js"
+import { authRouter, postRouter, userRouter, followRouter, commentRouter } from "./routes/index.js"
 
 
 dotenv.config();
@@ -30,6 +30,7 @@ app.use("/api/auth", authRouter);
 app.use('/api/user', authenticate, userRouter);
 app.use('/api/post', authenticate, postRouter);
 app.use('/api/follow', authenticate, followRouter);
+app.use('/api/comment', authenticate, commentRouter);
 
 app.use((_, res) => {
     res.status(404).json({ error: "Not found" });

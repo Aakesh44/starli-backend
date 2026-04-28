@@ -29,10 +29,12 @@ const getPostById = async (req: AuthenticatedRequest, res: Response, next: NextF
     try {
 
         const { id: postId } = req.validated?.params;
+        const userId = req.user!.userId;
+
 
         if (!postId) throw BadRequest("Post id is required");
 
-        const post = await postService.getPostById(postId);
+        const post = await postService.getPostById(postId, userId);
 
         return res.status(200).json({
             post,
@@ -109,6 +111,54 @@ const update = async (req: AuthenticatedRequest, res: Response, next: NextFuncti
     }
 };
 
+const likeToPost = async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+    try {
+        const userId = req.user!.userId;
+
+        const { id: postId } = req.validated?.params;
+
+        if (!postId) throw BadRequest("Post id is required");
+
+        const post = await postService.likeToPost({
+            postId: postId,
+            userId
+        });
+
+        return res.status(200).json({
+            post,
+            success: true,
+            message: "Post reacted successfully"
+        });
+
+    } catch (error) {
+        next(error);
+    }
+};
+
+const removeLikeFromPost = async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+    try {
+        const userId = req.user!.userId;
+
+        const { id: postId } = req.validated?.params;
+
+        if (!postId) throw BadRequest("Post id is required");
+
+        const post = await postService.removeLikeFromPost({
+            postId: postId,
+            userId
+        });
+
+        return res.status(200).json({
+            post,
+            success: true,
+            message: "Post reacted successfully"
+        });
+
+    } catch (error) {
+        next(error);
+    }
+};
+
 const deletePost = async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
     try {
 
@@ -136,6 +186,8 @@ const postController = {
     getPostById,
     create,
     update,
+    likeToPost,
+    removeLikeFromPost,
     deletePost
 };
 

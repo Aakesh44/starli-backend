@@ -14,4 +14,4 @@ export const mapPostResponse = (post: IPost) => (post ? {
     createdAt: post.createdAt,
     updatedAt: post.updatedAt,
     scheduledAt: post.scheduledAt
-} : null);
+} : post);

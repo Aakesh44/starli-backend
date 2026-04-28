@@ -18,6 +18,7 @@ export interface IPost {
         comments: number;
         likes: number;
         dislikes: number;
+        reshares: number;
     };
     createdAt: Date;
     updatedAt: Date;
@@ -84,11 +85,11 @@ const postSchema = new Schema({
             type: Number,
             default: 0
         },
-        reshares: {
+        likes: {
             type: Number,
             default: 0
         },
-        reactions: {
+        reshares: {
             type: Number,
             default: 0
         }

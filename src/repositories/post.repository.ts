@@ -3,6 +3,7 @@ import { Post } from "../models/post.model.js";
 import { decodeCursor, encodeCursor } from "./utils/cursor.util.js";
 import { mapPostResponse } from "./utils/mappers/post.mapper.js";
 import { mapUserResponse } from "./utils/mappers/user.mapper.js";
+import { Reaction } from "../models/reaction.model.js";
 
 interface GetPostsRepoInput {
     conditions: Record<string, any>;
@@ -38,6 +39,10 @@ export interface UpdatePostInput {
     }[];
 };
 
+const updateCounterToPost = async (postId: string, counterField: "likes" | "comments" | "dislikes" | "reshares", value: number) => {
+    await Post.findByIdAndUpdate(postId, { $inc: { [`counts.${counterField}`]: value } });
+};
+
 const getPosts = async ({
     conditions,
     sort,
@@ -67,7 +72,7 @@ const getPosts = async ({
         .lean().populate("author");
 
     const hasMore = posts.length === limit + 1;
-    const items = (hasMore ? posts.slice(0, limit) : posts)?.map(p => ({ ...p, author: mapUserResponse(p.author as any) }));
+    const items = (hasMore ? posts.slice(0, limit) : posts)?.map(p => ({ ...p, author: mapUserResponse(p.author as any) }))?.filter(Boolean);
 
     const nextCursor = hasMore
         ? encodeCursor(items[items.length - 1] as any)
@@ -84,6 +89,7 @@ const getPostById = async (id: string) => {
 
     const post = await Post.findById(id).select("-__v -isDeleted -deletedAt").lean().populate("author");
     return mapPostResponse(post as any);
+
 }
 
 const createPost = async (data: CreatePostInput) => {
@@ -109,6 +115,45 @@ const updatePosts = async (data: UpdatePostInput) => {
     return mapPostResponse(post as any);
 }
 
+const likeToPost = async (data: {
+    userId: string,
+    postId: string,
+    reactionType: "LIKE"
+}) => {
+
+    const reaction = await Reaction.findOne(
+        { user: data.userId, targetId: data.postId, targetType: "POST" }
+    );
+
+    console.log('⚠️ Existing reaction:', reaction);
+
+    if (reaction) {
+
+        await Reaction.findOneAndDelete({ user: data.userId, targetId: data.postId, targetType: "POST" });
+
+        await updateCounterToPost(data.postId, "likes", -1);
+
+    }
+    else {
+        await Reaction.create({ user: data.userId, targetId: data.postId, targetType: "POST", reactionType: data.reactionType });
+
+        await updateCounterToPost(data.postId, "likes", 1);
+    }
+};
+
+const removeLikeFromPost = async (data: {
+    userId: string,
+    postId: string,
+}) => {
+
+    const reaction = await Reaction.findOneAndDelete({ user: data.userId, targetId: data.postId, targetType: "POST", reactionType: "LIKE" });
+
+    if (reaction) {
+        await updateCounterToPost(data.postId, "likes", -1);
+    }
+};
+
+
 const deletePost = async (id: string, author: string) => {
     console.log('id:', id);
     console.log('author:', author);
@@ -122,7 +167,10 @@ const postRepository = {
     getPostById,
     createPost,
     updatePosts,
-    deletePost
+    likeToPost,
+    deletePost,
+    removeLikeFromPost,
+    updateCounterToPost
 };
 
 export default postRepository

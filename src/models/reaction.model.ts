@@ -21,7 +21,7 @@ const reactionSchema = new Schema({
     },
     reactionType: {
         type: String,
-        enum: ['LIKE', 'DISLIKE'],
+        enum: ['LIKE'],
         required: true,
         index: true
     }

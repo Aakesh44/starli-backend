@@ -46,6 +46,18 @@ postRouter.delete(
     postController.deletePost
 );
 
+postRouter.post(
+    '/:id/like/add',
+    validateRequest(postRequestSchema.likeToPostSchema),
+    postController.likeToPost
+);
+
+postRouter.post(
+    '/:id/like/remove',
+    validateRequest(postRequestSchema.removeLikeFromPostSchema),
+    postController.removeLikeFromPost
+);
+
 // postRouter.patch('/:id',);
 
 // postRouter.use('/draft', draftRouter);

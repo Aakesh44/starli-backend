@@ -1,5 +1,28 @@
 import mongoose, { Schema, Types } from "mongoose";
 
+export enum CommentTargetType {
+    POST = 'POST',
+    COURSE = 'COURSE'
+};
+
+export interface IComment {
+    _id: Types.ObjectId;
+    author: Types.ObjectId;
+    targetId: Types.ObjectId;
+    targetType: CommentTargetType;
+    parentId: Types.ObjectId | null;
+    content: string;
+    media: string | null;
+    counts: {
+        likes: number;
+        replies: number;
+    };
+    isDeleted: boolean;
+    deletedAt: Date | null;
+    createdAt: Date;
+    updatedAt: Date;
+};
+
 const commentSchema = new Schema({
 
     author: {
@@ -8,37 +31,31 @@ const commentSchema = new Schema({
         required: true,
         index: true
     },
-    post: {
+    targetId: {
         type: Types.ObjectId,
-        ref: 'Post', // can be post or comment
         required: true,
         index: true
     },
-    parentComment: {
+    targetType: {
+        type: String,
+        enum: Object.values(CommentTargetType),
+        required: true,
+        index: true
+    },
+    parentId: {
         type: Types.ObjectId,
         ref: 'Comment',
         default: null
     },
     content: {
-        text: {
-            type: String,
-            trim: true,
-            maxLength: 1000,
-            required: true,
-        },
-        media: [
-            {
-                url: {
-                    type: String,
-                    required: true
-                },
-                type: {
-                    type: String,
-                    enum: ['IMAGE', 'VIDEO'],
-                    required: true
-                }
-            }
-        ]
+        type: String,
+        trim: true,
+        maxLength: 1000,
+        required: true,
+    },
+    media: {
+        type: String,
+        default: null
     },
     counts: {
         likes: {

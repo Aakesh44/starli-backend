@@ -1,4 +1,5 @@
 import postRepository from "../repositories/post.repository.js";
+import reactionRepository from "../repositories/reaction.repository.js";
 import userRepository from "../repositories/user.repository.js";
 import { BadRequest } from "../utils/errors.js";
 
@@ -76,18 +77,35 @@ const get = async (data: {
 
     console.log('conditions:', conditions);
 
-    return await postRepository.getPosts({
+    const posts = await postRepository.getPosts({
         conditions,
         cursor,
         limit,
         sort
     });
 
+    const reactionMap = new Map();
+    const reactions = await reactionRepository
+        .checkIfUserReactedList(userId, posts.items.map((post) => post.id), "POST")
+    reactions.forEach((reaction) => {
+        reactionMap.set(reaction.targetId, reaction.reactionType);
+    });
+
+    return {
+        items: posts.items?.map(post => ({ ...post, liked: reactionMap.get(post.id) === "LIKE" })),
+        nextCursor: posts.nextCursor,
+        hasMore: posts.hasMore
+    }
+
+
 };
 
-const getPostById = async (postId: string) => {
+const getPostById = async (postId: string, userId: string) => {
 
-    return await postRepository.getPostById(postId);
+    const post = await postRepository.getPostById(postId);
+    const reaction = await reactionRepository.checkIfUserReacted(userId, postId, "POST");
+
+    return { ...post, liked: reaction === "LIKE" };
 }
 
 const create = async (data: {
@@ -112,7 +130,7 @@ const create = async (data: {
 
     const post = (await postRepository.createPost({ author: userId, title, content, status, media, scheduledAt: scheduledAt || null, tag }));
 
-    return { ...post, author: user };
+    return { ...post, author: user, liked: false };
 };
 
 const update = async (data: {
@@ -139,6 +157,35 @@ const update = async (data: {
     return { ...post, author: user };
 };
 
+const likeToPost = async (data: {
+    postId: string,
+    userId: string,
+}) => {
+    const { postId, userId } = data;
+
+    const post = await postRepository.likeToPost({
+        postId,
+        userId,
+        reactionType: "LIKE"
+    });
+
+    return post;
+};
+
+const removeLikeFromPost = async (data: {
+    postId: string,
+    userId: string,
+}) => {
+    const { postId, userId } = data;
+
+    const post = await postRepository.removeLikeFromPost({
+        postId,
+        userId
+    });
+
+    return post;
+};
+
 const deletePost = async (postId: string, userId: string,) => {
 
     return await postRepository.deletePost(postId, userId);
@@ -149,6 +196,8 @@ const postService = {
     getPostById,
     create,
     update,
+    likeToPost,
+    removeLikeFromPost,
     deletePost
 }
 
