@@ -1,5 +1,6 @@
 import { Comment } from "../models/comment.model.js";
 import { Post } from "../models/post.model.js";
+import { Reaction } from "../models/reaction.model.js";
 import { mapCommentResponse } from "./utils/mappers/comment.mapper.js";
 
 const updateCounterToComment = async (commentId: string, counterField: "likes" | "replies", value: number) => {
@@ -38,6 +39,33 @@ const update = async (id: string, data: object) => {
     return mapCommentResponse(comment as any);
 };
 
+const likeToComment = async (commentId: string, userId: string) => {
+
+    const comment = await Reaction.findOne(
+        { user: userId, targetId: commentId, targetType: "COMMENT" }
+    );
+
+    if (comment) {
+        await Reaction.findOneAndDelete({ user: userId, targetId: commentId, targetType: "COMMENT" });
+
+        await updateCounterToComment(commentId, "likes", -1);
+    }
+    else {
+        await Reaction.create({ user: userId, targetId: commentId, targetType: "COMMENT", reactionType: "LIKE" });
+
+        await updateCounterToComment(commentId, "likes", 1);
+    }
+};
+
+const removeLikeFromComment = async (commentId: string, userId: string) => {
+
+    const reaction = await Reaction.findOneAndDelete({ user: userId, targetId: commentId, targetType: "COMMENT", reactionType: "LIKE" });
+
+    if (reaction) {
+        await updateCounterToComment(commentId, "likes", -1);
+    }
+};
+
 const deleteCommentById = async (id: string) => {
     return await Comment.findByIdAndUpdate({ _id: id }, { isDeleted: true });
 };
@@ -54,6 +82,8 @@ const commentRepository = {
     findOne,
     update,
     updateCounterToComment,
+    likeToComment,
+    removeLikeFromComment,
     deleteCommentById,
     deleteCommentByTargetId
 };

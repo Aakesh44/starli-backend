@@ -1,12 +1,4 @@
 import { Router } from "express";
-import {
-    draftRouter,
-    scheduledPostRouter,
-    commentRouter,
-    reactionRouter,
-    reshareRouter,
-    bookmarkRouter
-} from './index.js'
 import { uploadPostMedia } from "../middleware/upload.middleware.js";
 import { validateRequest } from "../middleware/req.validator.js";
 import postRequestSchema from "../schema/post.request.schema.js";
@@ -45,6 +37,12 @@ postRouter.delete(
     validateRequest(postRequestSchema.deletePostSchema),
     postController.deletePost
 );
+
+postRouter.get(
+    '/:id/likes',
+    validateRequest(postRequestSchema.getPostLikesSchema),
+    postController.getPostLikes
+)
 
 postRouter.post(
     '/:id/like/add',

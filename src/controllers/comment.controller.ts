@@ -33,8 +33,9 @@ const getComments = async (req: AuthenticatedRequest, res: Response, next: NextF
     try {
 
         const { targetType, targetId, limit } = req.validated?.query;
+        const userId = req.user!.userId;
 
-        const comments = await commentService.getComments(targetId, targetType);
+        const comments = await commentService.getComments(userId, targetId, targetType);
 
         return res.status(200).json({
             comments,
@@ -51,8 +52,9 @@ const getCommentReplies = async (req: AuthenticatedRequest, res: Response, next:
     try {
 
         const { commentId } = req.validated?.params;
+        const userId = req.user!.userId;
 
-        const replies = await commentService.getCommentReplies(commentId);
+        const replies = await commentService.getCommentReplies(userId, commentId);
 
         return res.status(200).json({
             replies,
@@ -85,6 +87,46 @@ const updateComment = async (req: AuthenticatedRequest, res: Response, next: Nex
     }
 };
 
+const likeToComment = async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+    try {
+
+        const { commentId } = req.validated?.params;
+        const userId = req.user!.userId;
+
+        const comment = await commentService.likeToComment(commentId, userId);
+
+        return res.status(200).json({
+            comment,
+            success: true,
+            message: "Comment liked successfully"
+        });
+
+    }
+    catch (error) {
+        next(error);
+    }
+};
+
+const removeLikeFromComment = async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+    try {
+
+        const { commentId } = req.validated?.params;
+        const userId = req.user!.userId;
+
+        const comment = await commentService.removeLikeFromComment(commentId, userId);
+
+        return res.status(200).json({
+            comment,
+            success: true,
+            message: "Comment unliked successfully"
+        });
+
+    }
+    catch (error) {
+        next(error);
+    }
+};
+
 
 const deleteComment = async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
     try {
@@ -108,6 +150,8 @@ const commentController = {
     getComments,
     getCommentReplies,
     updateComment,
+    likeToComment,
+    removeLikeFromComment,
     deleteComment
 };
 

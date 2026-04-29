@@ -4,8 +4,7 @@ import cors from "cors";
 import helmet from "helmet";
 import morgan from "morgan";
 import { errorHandler } from './middleware/error.middleware.js';
-import { authenticate } from './middleware/auth.middleware.js';
-import { authRouter, postRouter, userRouter, followRouter, commentRouter } from "./routes/index.js"
+import { registerRoutes } from "./routes/index.js"
 
 
 dotenv.config();
@@ -26,11 +25,7 @@ app.get('/', (_, res) => {
     res.send("🌠 Starli is sparkling brightly")
 });
 
-app.use("/api/auth", authRouter);
-app.use('/api/user', authenticate, userRouter);
-app.use('/api/post', authenticate, postRouter);
-app.use('/api/follow', authenticate, followRouter);
-app.use('/api/comment', authenticate, commentRouter);
+registerRoutes(app);
 
 app.use((_, res) => {
     res.status(404).json({ error: "Not found" });

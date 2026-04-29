@@ -1,3 +1,4 @@
+import followRepository from "../repositories/follow.repository.js";
 import postRepository from "../repositories/post.repository.js";
 import reactionRepository from "../repositories/reaction.repository.js";
 import userRepository from "../repositories/user.repository.js";
@@ -85,8 +86,10 @@ const get = async (data: {
     });
 
     const reactionMap = new Map();
+
     const reactions = await reactionRepository
-        .checkIfUserReactedList(userId, posts.items.map((post) => post.id), "POST")
+        .checkIfUserReactedList(userId, posts.items.map((post) => post.id), "POST");
+
     reactions.forEach((reaction) => {
         reactionMap.set(reaction.targetId, reaction.reactionType);
     });
@@ -157,6 +160,31 @@ const update = async (data: {
     return { ...post, author: user };
 };
 
+const getPostLikes = async (postId: string, userId: string) => {
+
+    const users = await reactionRepository.getReactions(postId, "POST", "LIKE");
+
+    const userIds = users
+        .filter(u => u && u.id !== userId)
+        .map(u => u.id);
+
+    const followingList = await followRepository.getFollowingStatusBulk(userId, userIds);
+    const followerList = await followRepository.getFollowerStatusBulk(userId, userIds);
+
+    const followingSet = new Set(followingList);
+    const followerSet = new Set(followerList);
+
+    return users.map((user) => {
+
+        if (!user || user?.id === userId) return user;
+
+        const following = followingSet.has(user.id);
+        const follower = followerSet.has(user.id);
+        return { ...user, following, follower }
+    });
+
+};
+
 const likeToPost = async (data: {
     postId: string,
     userId: string,
@@ -196,6 +224,7 @@ const postService = {
     getPostById,
     create,
     update,
+    getPostLikes,
     likeToPost,
     removeLikeFromPost,
     deletePost

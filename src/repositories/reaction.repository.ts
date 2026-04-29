@@ -1,4 +1,5 @@
 import { Reaction } from "../models/reaction.model.js";
+import { mapUserResponse } from "./utils/mappers/user.mapper.js";
 
 const checkIfUserReacted = async (userId: string, targetId: string, targetType: string) => {
     const reaction = await Reaction.findOne({ user: userId, targetId, targetType });
@@ -12,6 +13,14 @@ const checkIfUserReactedList = async (userId: string, targetIds: string[], targe
     return reactions.map(reaction => ({ targetId: reaction.targetId.toString(), reactionType: reaction.reactionType }));
 };
 
-const reactionRepository = { checkIfUserReacted, checkIfUserReactedList };
+const getReactions = async (targetId: string, targetType: string, reactionType: 'LIKE') => {
+
+    const reactions = await Reaction.find({ targetId: targetId, targetType: targetType, reactionType: reactionType }).lean().populate("user");
+
+    return reactions.map(reaction => mapUserResponse(reaction.user as any));
+
+};
+
+const reactionRepository = { checkIfUserReacted, checkIfUserReactedList, getReactions };
 
 export default reactionRepository;

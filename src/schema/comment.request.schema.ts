@@ -39,6 +39,18 @@ const updateCommentSchema = z.object({
     })
 });
 
+const likeToCommentSchema = z.object({
+    params: z.object({
+        commentId: z.string().min(1, "Comment id is required")
+    })
+});
+
+const removeLikeFromCommentSchema = z.object({
+    params: z.object({
+        commentId: z.string().min(1, "Comment id is required")
+    })
+});
+
 const deleteCommentSchema = z.object({
     params: z.object({
         commentId: z.string().min(1, "Comment id is required")
@@ -50,6 +62,8 @@ const commentRequestSchema = {
     getCommentsSchema,
     getCommentRepliesSchema,
     updateCommentSchema,
+    likeToCommentSchema,
+    removeLikeFromCommentSchema,
     deleteCommentSchema
 };
 

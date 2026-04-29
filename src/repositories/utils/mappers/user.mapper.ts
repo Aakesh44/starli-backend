@@ -14,4 +14,4 @@ export const mapUserResponse = (user: IUser) => (user ? {
     social_links: user.social_links,
     createdAt: user.createdAt,
     updatedAt: user.updatedAt
-} : null);
+} : user);

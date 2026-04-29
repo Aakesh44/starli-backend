@@ -79,6 +79,12 @@ const deletePostSchema = z.object({
     })
 });
 
+const getPostLikesSchema = z.object({
+    params: z.object({
+        id: z.string().min(1, "Post id is required")
+    })
+});
+
 const likeToPostSchema = z.object({
     params: z.object({
         id: z.string().min(1, "Post id is required")
@@ -97,6 +103,7 @@ const postRequestSchema = {
     createPostSchema,
     updatePostSchema,
     deletePostSchema,
+    getPostLikesSchema,
     likeToPostSchema,
     removeLikeFromPostSchema
 };

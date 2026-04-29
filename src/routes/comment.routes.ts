@@ -11,6 +11,8 @@ const commentRouter = Router({
 
 commentRouter.post('/', uploadPostMedia.single('file'), validateRequest(commentRequestSchema.createPostSchema), commentController.create);
 commentRouter.get('/', validateRequest(commentSchema.getCommentsSchema), commentController.getComments);
+commentRouter.post('/:commentId/like/add', validateRequest(commentRequestSchema.likeToCommentSchema), commentController.likeToComment);
+commentRouter.post('/:commentId/like/remove', validateRequest(commentRequestSchema.removeLikeFromCommentSchema), commentController.removeLikeFromComment);
 commentRouter.get('/:commentId/replies', validateRequest(commentRequestSchema.getCommentRepliesSchema), commentController.getCommentReplies);
 commentRouter.put('/:commentId', validateRequest(commentRequestSchema.updateCommentSchema), commentController.updateComment);
 commentRouter.delete('/:commentId', validateRequest(commentRequestSchema.deleteCommentSchema), commentController.deleteComment);

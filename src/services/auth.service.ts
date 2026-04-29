@@ -44,7 +44,7 @@ const signup = async (email: string, password: string) => {
     const user = await authRepository.createUser(email, password, tempUserName, otp, otpExpires);
     const token = signJWT({ email: user.email }, { expiresIn: "5Mins" });
 
-    return { user, otp, token };
+    return { user: mapUserResponse(user), otp, token };
 }
 
 const login = async (email: string, password: string) => {
@@ -103,7 +103,7 @@ const login = async (email: string, password: string) => {
 
     const { access_token, refresh_token } = await createTokens(user?._id as string, user.role);
 
-    return { user, access_token, refresh_token, needsVerification: false };
+    return { user: mapUserResponse(user), access_token, refresh_token, needsVerification: false };
 }
 
 const google = async (idToken: string) => {

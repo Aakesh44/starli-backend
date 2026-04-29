@@ -11,4 +11,4 @@ export const mapCommentResponse = (comment: IComment) => (comment ? {
     counts: comment.counts,
     createdAt: comment.createdAt,
     updatedAt: comment.updatedAt,
-} : null);
+} : comment);

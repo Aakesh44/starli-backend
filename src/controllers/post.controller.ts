@@ -111,6 +111,27 @@ const update = async (req: AuthenticatedRequest, res: Response, next: NextFuncti
     }
 };
 
+const getPostLikes = async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+    try {
+
+        const { id: postId } = req.validated?.params;
+        const userId = req.user!.userId;
+
+        if (!postId) throw BadRequest("Post id is required");
+
+        const likes = await postService.getPostLikes(postId, userId);
+
+        return res.status(200).json({
+            likes,
+            success: true,
+            message: "Post likes fetched successfully"
+        });
+
+    } catch (error) {
+        next(error);
+    }
+};
+
 const likeToPost = async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
     try {
         const userId = req.user!.userId;
@@ -186,6 +207,7 @@ const postController = {
     getPostById,
     create,
     update,
+    getPostLikes,
     likeToPost,
     removeLikeFromPost,
     deletePost
