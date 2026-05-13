@@ -1,4 +1,6 @@
+import { Types } from "mongoose";
 import { Reaction } from "../models/reaction.model.js";
+import { decodeCursor, encodeCursor } from "./utils/cursor.util.js";
 import { mapUserResponse } from "./utils/mappers/user.mapper.js";
 
 const checkIfUserReacted = async (userId: string, targetId: string, targetType: string) => {
@@ -21,6 +23,49 @@ const getReactions = async (targetId: string, targetType: string, reactionType: 
 
 };
 
-const reactionRepository = { checkIfUserReacted, checkIfUserReactedList, getReactions };
+const getLikedReactions = async ({
+    conditions,
+    sort,
+    cursor,
+    limit
+}: {
+    conditions: Record<string, any>,
+    sort: Record<string, any>,
+    cursor: string,
+    limit: number
+}) => {
+
+    const queryCondtions = { ...conditions };
+
+    if (cursor) {
+        const { createdAt, id } = decodeCursor(cursor);
+
+        queryCondtions.$or = [
+            { createdAt: { $lt: new Date(createdAt) } },
+            {
+                createdAt: new Date(createdAt),
+                _id: { $lt: new Types.ObjectId(id) }
+            }
+        ]
+    };
+
+    const reactions = await Reaction.find(queryCondtions)
+        .select("-__v")
+        .sort(sort)
+        .limit(limit + 1) // +1 for cursor
+        .lean()
+
+    const hasMore = reactions.length === limit + 1;
+    const items = (hasMore ? reactions.slice(0, limit) : reactions);
+
+    const nextCursor = hasMore
+        ? encodeCursor(items[items.length - 1] as any)
+        : null;
+
+    return { items, nextCursor, hasMore };
+
+}
+
+const reactionRepository = { checkIfUserReacted, checkIfUserReactedList, getReactions, getLikedReactions };
 
 export default reactionRepository;

@@ -3,9 +3,10 @@ import { Post } from "../models/post.model.js";
 import commentRepository from "../repositories/comment.repository.js";
 import postRepository from "../repositories/post.repository.js";
 import reactionRepository from "../repositories/reaction.repository.js";
+import type { IMedia } from "../schemas/media.schema.js";
 import { NotFound } from "../utils/errors.js";
 
-const create = async (userId: string, targetId: string, targetType: CommentTargetType, parentId: string, content: string, media: string[]) => {
+const create = async (userId: string, targetId: string, targetType: CommentTargetType, parentId: string, content: string, media: IMedia[]) => {
 
     let comment;
 
@@ -23,12 +24,12 @@ const create = async (userId: string, targetId: string, targetType: CommentTarge
             targetType: parentComment.targetType,
             content,
             parentId,
-            media: 'https://via.placeholder.com/150'
+            media
         });
 
     }
     else {
-        comment = await commentRepository.create({ author: userId, targetId, targetType, content, media: 'https://via.placeholder.com/150' });
+        comment = await commentRepository.create({ author: userId, targetId, targetType, content, media: media });
     }
 
     if (!comment) throw NotFound("Comment could not be created");
@@ -44,45 +45,83 @@ const create = async (userId: string, targetId: string, targetType: CommentTarge
 
 };
 
-const getComments = async (userId: string, targetId: string, targetType: CommentTargetType) => {
+const getComments = async (userId: string, targetId: string, targetType: CommentTargetType, cursor: string, limit: number) => {
 
-    const comments = await commentRepository.find({ targetId, targetType, parentId: null });
+    const conditions: Record<string, any> = {
+        isDeleted: false,
+        targetId,
+        targetType,
+        parentId: null
+    };
+
+    let sort: any = {
+        'counts.likes': -1,
+        'counts.replies': -1,
+        createdAt: -1,
+        // _id: -1,
+    };
+
+
+    const comments = await commentRepository.find({ conditions, cursor, limit, sort });
 
     if (!comments) throw NotFound("Comments not found");
 
-    if (comments.length === 0) return [];
-
     const reactionMap = new Map();
 
     const reactions = await reactionRepository
-        .checkIfUserReactedList(userId, comments?.map((comment) => comment?.id!), "COMMENT");
+        .checkIfUserReactedList(userId, comments?.items?.map((comment) => comment?.id!), "COMMENT");
 
     reactions.forEach((reaction) => {
         reactionMap.set(reaction.targetId, reaction.reactionType);
     });
 
-    return comments.map(comment => ({ ...comment, liked: reactionMap.get(comment.id) === "LIKE" }));
+    return {
+        items: comments.items.map(comment => ({ ...comment, liked: reactionMap.get(comment.id) === "LIKE" })),
+        hasMore: comments.hasMore,
+        cursor: comments.nextCursor
+    }
+
+    // return comments.map(comment => ({ ...comment, liked: reactionMap.get(comment.id) === "LIKE" }));
 
 };
 
-const getCommentReplies = async (userId: string, commentId: string) => {
+const getCommentReplies = async (userId: string, commentId: string, cursor: string, limit: number) => {
 
-    const replies = await commentRepository.find({ parentId: commentId });
+    const conditions: Record<string, any> = {
+        isDeleted: false,
+        parentId: commentId
+    };
 
-    if (!replies) throw NotFound("Comments not found");
+    let sort: any = {
+        createdAt: 1,
+        // _id: -1,
+        // 'counts.likes': -1,
+        // 'counts.replies': -1,
+    };
 
-    if (replies.length === 0) return [];
+    const replies = await commentRepository.find({
+        conditions,
+        sort,
+        limit,
+        cursor
+    });
 
     const reactionMap = new Map();
 
     const reactions = await reactionRepository
-        .checkIfUserReactedList(userId, replies?.map((comment) => comment?.id!), "COMMENT");
+        .checkIfUserReactedList(userId, replies?.items?.map((comment) => comment?.id!), "COMMENT");
 
     reactions.forEach((reaction) => {
         reactionMap.set(reaction.targetId, reaction.reactionType);
     });
 
-    return replies.map(comment => ({ ...comment, liked: reactionMap.get(comment.id) === "LIKE" }));
+    return {
+        items: replies.items?.map(comment => ({ ...comment, liked: reactionMap.get(comment.id) === "LIKE" })),
+        hasMore: replies.hasMore,
+        cursor: replies.nextCursor
+    }
+
+    return
 
 };
 

@@ -9,7 +9,7 @@ const commentRouter = Router({
     mergeParams: true
 });
 
-commentRouter.post('/', uploadPostMedia.single('file'), validateRequest(commentRequestSchema.createPostSchema), commentController.create);
+commentRouter.post('/', uploadPostMedia.array('media', 1), validateRequest(commentRequestSchema.createPostSchema), commentController.create);
 commentRouter.get('/', validateRequest(commentSchema.getCommentsSchema), commentController.getComments);
 commentRouter.post('/:commentId/like/add', validateRequest(commentRequestSchema.likeToCommentSchema), commentController.likeToComment);
 commentRouter.post('/:commentId/like/remove', validateRequest(commentRequestSchema.removeLikeFromCommentSchema), commentController.removeLikeFromComment);

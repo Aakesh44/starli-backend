@@ -43,6 +43,11 @@ const updateCounterToPost = async (postId: string, counterField: "likes" | "comm
     await Post.findByIdAndUpdate(postId, { $inc: { [`counts.${counterField}`]: value } });
 };
 
+const getUserPostsTotal = async (userId: string) => {
+    const counts = await Post.countDocuments({ author: userId, isDeleted: false });
+    return counts;
+};
+
 const getPosts = async ({
     conditions,
     sort,
@@ -83,23 +88,28 @@ const getPosts = async ({
         nextCursor,
         hasMore
     }
-}
+};
 
 const getPostById = async (id: string) => {
 
     const post = await Post.findById(id).select("-__v -isDeleted -deletedAt").lean().populate("author");
     return mapPostResponse(post as any);
 
-}
+};
+
+const getPostByIds = async (ids: string[]): Promise<any[]> => {
+    const posts = await Post.find({ _id: { $in: ids }, isDeleted: false }).select("-__v -isDeleted -deletedAt").populate("author").lean();
+    return posts.map(p => mapPostResponse(p as any));
+};
 
 const createPost = async (data: CreatePostInput) => {
 
     const created = await Post.create(data);
 
-    const post = await Post.findById(created._id).select("-__v -isDeleted -deletedAt").lean();
+    const post = await Post.findById(created._id).select("-__v -isDeleted -deletedAt").populate('author').lean();
 
     return mapPostResponse(post as any);
-}
+};
 
 const updatePosts = async (data: UpdatePostInput) => {
     const post = await Post.findOneAndUpdate(
@@ -113,7 +123,7 @@ const updatePosts = async (data: UpdatePostInput) => {
     ).select("-__v -isDeleted -deletedAt");
 
     return mapPostResponse(post as any);
-}
+};
 
 const likeToPost = async (data: {
     userId: string,
@@ -160,11 +170,13 @@ const deletePost = async (id: string, author: string) => {
     const post = await Post.findOneAndUpdate({ _id: id, author }, { isDeleted: true, deletedAt: new Date() });
 
     return mapPostResponse(post as any);
-}
+};
 
 const postRepository = {
     getPosts,
+    getUserPostsTotal,
     getPostById,
+    getPostByIds,
     createPost,
     updatePosts,
     likeToPost,

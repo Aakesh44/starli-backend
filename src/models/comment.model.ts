@@ -1,4 +1,5 @@
 import mongoose, { Schema, Types } from "mongoose";
+import mediaSchema from "../schemas/media.schema.js";
 
 export enum CommentTargetType {
     POST = 'POST',
@@ -12,7 +13,11 @@ export interface IComment {
     targetType: CommentTargetType;
     parentId: Types.ObjectId | null;
     content: string;
-    media: string | null;
+    media: {
+        url: string;
+        publicId: string;
+        type: "IMAGE" | "VIDEO";
+    }[];
     counts: {
         likes: number;
         replies: number;
@@ -53,10 +58,7 @@ const commentSchema = new Schema({
         maxLength: 1000,
         required: true,
     },
-    media: {
-        type: String,
-        default: null
-    },
+    media: [mediaSchema],
     counts: {
         likes: {
             type: Number,

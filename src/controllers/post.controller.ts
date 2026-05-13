@@ -2,6 +2,7 @@ import type { NextFunction, Request, Response } from 'express';
 import postService from '../services/post.service.js';
 import { BadRequest } from '../utils/errors.js';
 import type { AuthenticatedRequest } from '../middleware/auth.middleware.js';
+import uploadService from '../services/upload.service.js';
 
 const get = async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
     try {
@@ -53,7 +54,23 @@ const create = async (req: AuthenticatedRequest, res: Response, next: NextFuncti
         const userId = req.user!.userId;
 
         const { title, content, status, tag, scheduledAt } = req.validated?.body;
+
         const media = req.files;
+
+        let uploadedMedia = null;
+
+        if (media && Array.isArray(media) && media.length > 0) {
+
+            const uploaded = await Promise.all(
+                media.map((file: Express.Multer.File) => uploadService.uploadCloudinary(file, 'POST'))
+            );
+
+            uploadedMedia = uploaded.map((file: any) => ({
+                url: file.secure_url,
+                publicId: file.public_id,
+                type: file.resource_type?.toUpperCase()
+            }));
+        };
 
         const post = await postService.create({
             userId,
@@ -61,7 +78,7 @@ const create = async (req: AuthenticatedRequest, res: Response, next: NextFuncti
             content,
             status,
             scheduledAt,
-            media: [],
+            media: uploadedMedia || [],
             tag
         });
 
@@ -125,6 +142,26 @@ const getPostLikes = async (req: AuthenticatedRequest, res: Response, next: Next
             likes,
             success: true,
             message: "Post likes fetched successfully"
+        });
+
+    } catch (error) {
+        next(error);
+    }
+};
+
+const getLikedPosts = async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+    try {
+        const userId = req.user!.userId;
+
+        const { cursor, limit } = req.validated?.query;
+
+
+        const posts = await postService.getLikedPosts(userId, cursor, limit);
+
+        return res.status(200).json({
+            posts,
+            success: true,
+            message: "Liked posts fetched successfully"
         });
 
     } catch (error) {
@@ -208,6 +245,7 @@ const postController = {
     create,
     update,
     getPostLikes,
+    getLikedPosts,
     likeToPost,
     removeLikeFromPost,
     deletePost

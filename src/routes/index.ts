@@ -8,6 +8,7 @@ import { default as draftRouter } from "./draft.route.js";
 import { default as scheduledPostRouter } from "./scheduled.route.js";
 import { default as followRouter } from "./follow.route.js";
 import { default as userRouter } from "./user.route.js";
+import { default as searchRouter } from "./search.route.js";
 import type { Express } from "express";
 
 import { authenticate } from "../middleware/auth.middleware.js";
@@ -18,4 +19,7 @@ export const registerRoutes = (app: Express) => {
     app.use("/api/post", authenticate, postRouter);
     app.use("/api/follow", authenticate, followRouter);
     app.use("/api/comment", authenticate, commentRouter);
+    app.use("/api/bookmark", authenticate, bookmarkRouter);
+    app.use("/api/reshare", authenticate, reshareRouter);
+    app.use('/api/search', authenticate, searchRouter)
 };

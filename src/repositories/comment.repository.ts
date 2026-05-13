@@ -1,7 +1,10 @@
+import { Types } from "mongoose";
 import { Comment } from "../models/comment.model.js";
 import { Post } from "../models/post.model.js";
 import { Reaction } from "../models/reaction.model.js";
+import { decodeCursor, encodeCursor } from "./utils/cursor.util.js";
 import { mapCommentResponse } from "./utils/mappers/comment.mapper.js";
+import { mapUserResponse } from "./utils/mappers/user.mapper.js";
 
 const updateCounterToComment = async (commentId: string, counterField: "likes" | "replies", value: number) => {
     await Comment.findByIdAndUpdate(commentId, { $inc: { [`counts.${counterField}`]: value } });
@@ -19,14 +22,53 @@ const create = async (data: object) => {
     return mapCommentResponse(comment as any);
 };
 
-const find = async (data: object) => {
+interface GetCommentsRepoInput {
+    conditions: Record<string, any>;
+    sort: Record<string, 1 | -1>;
+    cursor?: string;
+    limit: number;
+};
+
+const find = async ({
+    conditions,
+    limit,
+    sort,
+    cursor
+}: GetCommentsRepoInput) => {
+
+    const queryConditions = { ...conditions };
+
+    if (cursor) {
+        const { createdAt, id } = decodeCursor(cursor);
+
+        queryConditions.$or = [
+            { createdAt: { $lt: new Date(createdAt) } },
+            {
+                createdAt: new Date(createdAt),
+                _id: { $lt: new Types.ObjectId(id) }
+            }
+        ]
+    }
+
     const comments = await Comment
-        .find(data)
+        .find(queryConditions)
         .select("-__v -deletedAt")
         // sort based on counts: {likes}
-        .sort({ "counts.likes": -1, "counts.replies": -1 })
+        .sort(sort)
+        .limit(limit + 1)
         .lean().populate("author");
-    return comments.map(c => mapCommentResponse(c as any));
+
+    const hasMore = comments.length === limit + 1;
+    const items = (hasMore ? comments.slice(0, limit) : comments)?.map(c => ({ ...c, author: mapUserResponse(c.author as any) }))?.filter(Boolean);
+    const nextCursor = hasMore
+        ? encodeCursor(items[items.length - 1] as any)
+        : null;
+
+    return {
+        items: items?.map(p => mapCommentResponse(p as any)),
+        nextCursor,
+        hasMore
+    }
 };
 
 const findOne = async (data: object) => {

@@ -97,6 +97,18 @@ const removeLikeFromPostSchema = z.object({
     }),
 });
 
+const getLikedPostsSchema = z.object({
+    query: z.object({
+        cursor: z.string().optional(),
+        limit: z
+            .string()
+            .transform((limit) => parseInt(limit))
+            .refine((n) => !isNaN(n) && n > 0 && n <= 50, "Limit must be a number between 1 and 50")
+            .optional()
+            .default(10),
+    })
+});
+
 const postRequestSchema = {
     getPostsSchema,
     getPostByIdSchema,
@@ -105,7 +117,8 @@ const postRequestSchema = {
     deletePostSchema,
     getPostLikesSchema,
     likeToPostSchema,
-    removeLikeFromPostSchema
+    removeLikeFromPostSchema,
+    getLikedPostsSchema
 };
 
 export default postRequestSchema;

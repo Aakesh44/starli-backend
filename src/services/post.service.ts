@@ -1,7 +1,10 @@
+import bookmarkRepository from "../repositories/bookmark.repository.js";
 import followRepository from "../repositories/follow.repository.js";
 import postRepository from "../repositories/post.repository.js";
 import reactionRepository from "../repositories/reaction.repository.js";
 import userRepository from "../repositories/user.repository.js";
+import { mapUserResponse } from "../repositories/utils/mappers/user.mapper.js";
+import type { IMedia } from "../schemas/media.schema.js";
 import { BadRequest } from "../utils/errors.js";
 
 const get = async (data: {
@@ -85,6 +88,16 @@ const get = async (data: {
         sort
     });
 
+    const userIds = posts.items?.map(post => post.author)
+        .filter((u: any) => u && u.id !== userId)
+        .map(u => String(u.id)) || [];
+
+    const followingList = await followRepository.getFollowingStatusBulk(userId, userIds);
+    const followerList = await followRepository.getFollowerStatusBulk(userId, userIds);
+
+    const followingSet = new Set(followingList);
+    const followerSet = new Set(followerList);
+
     const reactionMap = new Map();
 
     const reactions = await reactionRepository
@@ -94,12 +107,34 @@ const get = async (data: {
         reactionMap.set(reaction.targetId, reaction.reactionType);
     });
 
+    const bookmarkMap = new Map();
+
+    const bookmarks = await bookmarkRepository
+        .checkIfUserBookmarkedList({
+            userId,
+            targetIds: posts.items.map((post) => post.id),
+            targetType: 'POST'
+        });
+
+    bookmarks.forEach((bookmark) => {
+        bookmarkMap.set(String(bookmark.targetId), true);
+    });
+
     return {
-        items: posts.items?.map(post => ({ ...post, liked: reactionMap.get(post.id) === "LIKE" })),
+        items: posts.items?.map(post => ({
+            ...post,
+            author: {
+                ...post.author,
+                following: followingSet.has(String(post.author.id)),
+                follower: followerSet.has(String(post.author.id))
+            },
+            isMine: String(post.author.id) === userId,
+            liked: reactionMap.get(post.id) === "LIKE",
+            bookmarked: !!bookmarkMap.has(String(post.id))
+        })),
         nextCursor: posts.nextCursor,
         hasMore: posts.hasMore
-    }
-
+    };
 
 };
 
@@ -107,8 +142,23 @@ const getPostById = async (postId: string, userId: string) => {
 
     const post = await postRepository.getPostById(postId);
     const reaction = await reactionRepository.checkIfUserReacted(userId, postId, "POST");
+    const bookmark = await bookmarkRepository.checkIfUserBookmarked({ userId, targetId: postId, targetType: "POST" });
 
-    return { ...post, liked: reaction === "LIKE" };
+    const isFollowing = await followRepository.checkIsFollowing(userId, String(post.author._id));
+    const isFollower = await followRepository.checkIsFollowing(String(post.author._id), userId);
+
+
+    return {
+        ...post,
+        author: {
+            ...mapUserResponse(post.author as any),
+            following: isFollowing,
+            follower: isFollower
+        },
+        isMine: String(post.author._id) === userId,
+        liked: reaction === "LIKE",
+        bookmarked: !!bookmark
+    };
 }
 
 const create = async (data: {
@@ -117,7 +167,7 @@ const create = async (data: {
     content: string,
     status: "PUBLISHED" | "DRAFT" | "SCHEDULED",
     scheduledAt?: Date,
-    media: { url: string, type: "IMAGE" | "VIDEO" }[],
+    media: IMedia[],
     tag: string
 }) => {
 
@@ -133,7 +183,20 @@ const create = async (data: {
 
     const post = (await postRepository.createPost({ author: userId, title, content, status, media, scheduledAt: scheduledAt || null, tag }));
 
-    return { ...post, author: user, liked: false };
+    const isFollowing = await followRepository.checkIsFollowing(userId, String(post.author._id));
+    const isFollower = await followRepository.checkIsFollowing(String(post.author._id), userId);
+
+    return {
+        ...post,
+        author: {
+            ...mapUserResponse(post.author as any),
+            following: isFollowing,
+            follower: isFollower
+        },
+        isMine: String(post.author._id) === userId,
+        liked: false,
+        bookmarked: false
+    };
 };
 
 const update = async (data: {
@@ -157,7 +220,22 @@ const update = async (data: {
 
     const post = (await postRepository.updatePosts({ id: postId, author: userId, title, content, status, scheduledAt: scheduledAt || null, media, tag }));
 
-    return { ...post, author: user };
+    const isFollowing = await followRepository.checkIsFollowing(userId, String(post.author._id));
+    const isFollower = await followRepository.checkIsFollowing(String(post.author._id), userId);
+
+    const reaction = await reactionRepository.checkIfUserReacted(userId, postId, "POST");
+
+    return {
+        ...post,
+        author: {
+            ...mapUserResponse(post.author as any),
+            following: isFollowing,
+            follower: isFollower
+        },
+        isMine: String(post.author._id) === userId,
+        liked: reaction === "LIKE",
+        bookmarked: false
+    };
 };
 
 const getPostLikes = async (postId: string, userId: string) => {
@@ -181,9 +259,32 @@ const getPostLikes = async (postId: string, userId: string) => {
         const following = followingSet.has(user.id);
         const follower = followerSet.has(user.id);
         return { ...user, following, follower }
+
     });
 
 };
+
+const getLikedPosts = async (userId: string, cursor: string, limit: number) => {
+
+    const conditions: Record<string, any> = {
+        user: userId
+    };
+
+    const sort = {
+        createdAt: -1
+    };
+
+    const reactions = await reactionRepository.getLikedReactions({ conditions, sort, cursor, limit });
+    const postIds = reactions.items.map(r => String(r.targetId));
+
+    const posts = await postRepository.getPostByIds(postIds);
+
+    return {
+        items: posts.map(p => ({ ...p, liked: true })),
+        nextCursor: reactions.nextCursor,
+        hasMore: reactions.hasMore
+    };
+}
 
 const likeToPost = async (data: {
     postId: string,
@@ -225,6 +326,7 @@ const postService = {
     create,
     update,
     getPostLikes,
+    getLikedPosts,
     likeToPost,
     removeLikeFromPost,
     deletePost

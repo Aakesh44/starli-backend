@@ -13,6 +13,7 @@ const createPostSchema = z.object({
 
 const getCommentsSchema = z.object({
     query: z.object({
+        cursor: z.string().optional(),
         targetId: z.string().min(1, "Target id is required"),
         targetType: z.enum(CommentTargetType, "Target type is required"),
         limit: z
@@ -26,7 +27,17 @@ const getCommentsSchema = z.object({
 
 const getCommentRepliesSchema = z.object({
     params: z.object({
-        commentId: z.string().min(1, "Comment id is required")
+        commentId: z.string().min(1, "Comment id is required"),
+
+    }),
+    query: z.object({
+        cursor: z.string().optional(),
+        limit: z
+            .string()
+            .transform((limit) => parseInt(limit))
+            .refine((n) => !isNaN(n) && n > 0 && n <= 10, "Limit must be a number between 1 and 10")
+            .optional()
+            .default(5),
     })
 });
 

@@ -1,5 +1,6 @@
 import mongoose, { Schema, Document } from "mongoose";
 import bcrypt from "bcrypt";
+import mediaSchema from "../schemas/media.schema.js";
 
 export interface IUser extends Document {
     _id: string,
@@ -7,8 +8,16 @@ export interface IUser extends Document {
     name?: string,
     username?: string,
     role: "USER" | "ADMIN",
-    picture?: string,
-    cover_picture?: string,
+    picture?: {
+        url: string;
+        publicId: string;
+        type: "IMAGE" | "VIDEO";
+    },
+    cover_picture?: {
+        url: string;
+        publicId: string;
+        type: "IMAGE" | "VIDEO";
+    },
     bio?: string,
     personal_website?: string,
     location?: string,
@@ -48,12 +57,10 @@ const userSchema = new Schema<IUser>({
         default: 'USER'
     },
     picture: {
-        type: String,
-        default: null
+        type: mediaSchema,
     },
     cover_picture: {
-        type: String,
-        default: null
+        type: mediaSchema
     },
     bio: {
         type: String,

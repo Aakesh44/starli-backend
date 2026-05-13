@@ -1,4 +1,5 @@
 import mongoose, { Schema, Types } from "mongoose";
+import mediaSchema from "../schemas/media.schema.js";
 
 export interface IPost {
     _id: Types.ObjectId;
@@ -7,6 +8,7 @@ export interface IPost {
     content: string;
     media: {
         url: string;
+        publicId: string;
         type: "IMAGE" | "VIDEO";
     }[];
     tag: string | null;
@@ -44,19 +46,7 @@ const postSchema = new Schema({
         maxLength: 2000,
         required: true,
     },
-    media: [
-        {
-            url: {
-                type: String,
-                required: true
-            },
-            type: {
-                type: String,
-                enum: ['IMAGE', 'VIDEO'],
-                required: true
-            }
-        }
-    ],
+    media: [mediaSchema],
     status: {
         type: String,
         enum: ['PUBLISHED', 'DRAFT', 'SCHEDULED'],

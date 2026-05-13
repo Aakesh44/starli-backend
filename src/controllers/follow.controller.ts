@@ -2,8 +2,20 @@ import type { NextFunction, Response } from "express";
 import type { AuthenticatedRequest } from "../middleware/auth.middleware.js";
 import followService from "../services/follow.service.js";
 
-const get = (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+const getFollow = async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
     try {
+
+        const { userId, type, cursor, limit } = req.validated?.query;
+
+        const result = await followService.getFollow({ userId, type, cursor, limit });
+
+        console.log(' 🔥⚠️⚠️ result:', result);
+
+        return res.status(200).json({
+            data: result,
+            success: true,
+            message: "Followers fetched successfully"
+        });
 
     } catch (error) {
         console.error(error);
@@ -31,8 +43,21 @@ const create = async (req: AuthenticatedRequest, res: Response, next: NextFuncti
     }
 };
 
-const deleteFollow = (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+const deleteFollow = async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
     try {
+
+        const userId = req.user!.userId;
+        const { followingId } = req.validated?.body;
+
+        console.log(' 🔥⚠️⚠️ followingId:', followingId);
+
+        await followService.unfollow(userId, followingId);
+
+        return res.status(200).json({
+            followingId,
+            success: true,
+            message: "Unfollowed successfully"
+        });
 
     } catch (error) {
         console.error(error);
@@ -40,4 +65,4 @@ const deleteFollow = (req: AuthenticatedRequest, res: Response, next: NextFuncti
     }
 };
 
-export default { get, create, deleteFollow };
+export default { getFollow, create, deleteFollow };

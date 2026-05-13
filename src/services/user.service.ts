@@ -1,21 +1,50 @@
+import followRepository from "../repositories/follow.repository.js";
+import postRepository from "../repositories/post.repository.js";
 import userRepository from "../repositories/user.repository.js";
 import { mapUserResponse } from "../repositories/utils/mappers/user.mapper.js";
+import type { IMedia } from "../schemas/media.schema.js";
 
 
 const getProfileById = async (userId: string) => {
 
     const user = await userRepository.getUserById(userId);
 
-    return mapUserResponse(user as any);
+    const [followings, followers] = await Promise.all([
+        followRepository.getFollowings(userId),
+        followRepository.getFollowers(userId)
+    ]);
+
+    const posts = await postRepository.getUserPostsTotal(userId);
+
+    return {
+        ...mapUserResponse(user as any),
+        followings,
+        followers,
+        posts
+    };
 }
 
 const getProfileByUsername = async (username: string) => {
 
     const user = await userRepository.getUserByUsername(username);
 
+    if (!user) return null;
+
     console.log('user:', user);
 
-    return mapUserResponse(user as any);
+    const [followings, followers] = await Promise.all([
+        followRepository.getFollowings(user?._id),
+        followRepository.getFollowers(user?._id)
+    ]);
+
+    const posts = await postRepository.getUserPostsTotal(user?._id);
+
+    return {
+        ...mapUserResponse(user as any),
+        followings,
+        followers,
+        posts
+    }
 }
 
 const checkUsernameAvailability = async (userId: string, username: string) => {
@@ -32,33 +61,37 @@ const checkUsernameAvailability = async (userId: string, username: string) => {
 
 const updateProfile = async (userId: string, data: any) => {
 
-    return await userRepository.updateUser(userId, data);
-
-};
-
-const updateProfilePicture = async (userId: string, data: any) => {
-
-    return {
-        url: 'url'
-    }
-
     const user = await userRepository.updateUser(userId, data);
 
     return mapUserResponse(user as any);
 
 };
 
+const updateProfilePicture = async (userId: string, media: IMedia) => {
+
+
+    const user = await userRepository.updateUser(userId, {
+        picture: media
+    });
+
+    return user?.picture;
+
+};
+
 const removeProfilePicture = async (userId: string) => {
-    await userRepository.updateUser(userId, { picture: null });
+
+    const user = await userRepository.updateUser(userId, { picture: null });
+
+    return user?.picture;
 }
 
-const updateProfileCoverImage = async (userId: string, data: any) => {
+const updateProfileCoverImage = async (userId: string, media: IMedia) => {
 
-    return {
-        url: 'url'
-    }
+    const user = await userRepository.updateUser(userId, {
+        cover_picture: media
+    });
 
-    return await userRepository.updateUser(userId, data);
+    return user?.cover_picture;
 
 };
 

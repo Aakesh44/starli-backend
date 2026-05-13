@@ -13,6 +13,12 @@ postRouter.get(
 );
 
 postRouter.get(
+    '/liked-posts',
+    validateRequest(postRequestSchema.getLikedPostsSchema),
+    postController.getLikedPosts
+)
+
+postRouter.get(
     '/:id',
     validateRequest(postRequestSchema.getPostByIdSchema),
     postController.getPostById

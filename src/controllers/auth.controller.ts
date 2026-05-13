@@ -111,6 +111,8 @@ const verifyEmail = async (req: Request, res: Response, next: NextFunction) => {
 
         const { user, access_token } = await authService.verifyEmail(token, otp);
 
+        console.log('✅✅✅✅Email verified for user:', user);
+
         return res.status(200).json({
             success: true,
             user,

@@ -1,6 +1,7 @@
 import type { Response, NextFunction } from "express";
 import userService from "../services/user.service.js";
 import type { AuthenticatedRequest } from "../middleware/auth.middleware.js";
+import uploadService from "../services/upload.service.js";
 
 const ALLOWED_FILE_TYPES = ["image/jpeg", "image/jpg", "image/png", "image/webp"];
 
@@ -86,11 +87,23 @@ const updateProfilePicture = async (req: AuthenticatedRequest, res: Response, ne
 
         if (!file) return res.status(400).json({ success: false, message: "File is required" });
 
-        if (!ALLOWED_FILE_TYPES.includes(file.mimetype)) return res.status(400).json({ success: false, message: "Unsupported file type" });
+        const uploadedFile = await uploadService.uploadCloudinary(file, 'PROFILE_PICTURE');
 
-        const data = await userService.updateProfilePicture(userId, file);
+        const uploadedPicture = {
+            url: uploadedFile?.secure_url,
+            publicId: uploadedFile?.public_id,
+            type: uploadedFile?.resource_type?.toUpperCase()
+        };
 
-        return res.status(200).json({ success: true, data, message: "Profile image updated successfully" });
+        const user = await userService.getProfileById(userId);
+
+        if (user?.picture?.publicId) {
+            await uploadService.deleteCloudinary(user.picture.publicId);
+        }
+
+        const profile_picture = await userService.updateProfilePicture(userId, uploadedPicture);
+
+        return res.status(200).json({ success: true, profile_picture, message: "Profile image updated successfully" });
 
     }
     catch (error) {
@@ -102,6 +115,12 @@ const removeProfilePicture = async (req: AuthenticatedRequest, res: Response, ne
     try {
 
         const userId = req.user!.userId;
+
+        const user = await userService.getProfileById(userId);
+
+        if (user?.picture?.publicId) {
+            await uploadService.deleteCloudinary(user.picture.publicId);
+        }
 
         await userService.removeProfilePicture(userId);
 
@@ -121,11 +140,23 @@ const updateProfileCoverImage = async (req: AuthenticatedRequest, res: Response,
 
         if (!file) return res.status(400).json({ success: false, message: "File is required" });
 
-        if (!ALLOWED_FILE_TYPES.includes(file.mimetype)) return res.status(400).json({ success: false, message: "Unsupported file type" });
+        const uploadedFile = await uploadService.uploadCloudinary(file, 'PROFILE_PICTURE');
 
-        const data = await userService.updateProfileCoverImage(userId, file);
+        const user = await userService.getProfileById(userId);
 
-        return res.status(200).json({ success: true, data, message: "Profile cover image updated successfully" });
+        if (user?.cover_picture?.publicId) {
+            await uploadService.deleteCloudinary(user.cover_picture.publicId);
+        }
+
+        const uploadedPicture = {
+            url: uploadedFile?.secure_url,
+            publicId: uploadedFile?.public_id,
+            type: uploadedFile?.resource_type?.toUpperCase()
+        }
+
+        const cover_picture = await userService.updateProfileCoverImage(userId, uploadedPicture);
+
+        return res.status(200).json({ success: true, cover_picture, message: "Profile cover image updated successfully" });
 
     } catch (error) {
         next(error);

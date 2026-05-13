@@ -6,7 +6,6 @@ import morgan from "morgan";
 import { errorHandler } from './middleware/error.middleware.js';
 import { registerRoutes } from "./routes/index.js"
 
-
 dotenv.config();
 
 const app = express();

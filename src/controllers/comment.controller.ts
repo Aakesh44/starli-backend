@@ -1,13 +1,32 @@
 import type { NextFunction, Response } from "express";
 import type { AuthenticatedRequest } from "../middleware/auth.middleware.js";
 import commentService from "../services/comment.service.js";
+import uploadService from "../services/upload.service.js";
+import type { IMedia } from "../schemas/media.schema.js";
 
 const create = async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
     try {
+
         console.log("Creating comment with body: ", req.validated?.body);
 
         const userId = req.user!.userId;
-        const { targetId, targetType, parentId, content, media } = req.validated?.body;
+        const { targetId, targetType, parentId, content } = req.validated?.body;
+
+        const media = req.files;
+
+        let uploadedMedia: IMedia | null = null;
+
+        if (media && Array.isArray(media) && media[0]) {
+
+            const uploaded = await uploadService.uploadCloudinary(media[0] as Express.Multer.File, 'COMMENT');
+
+            uploadedMedia = {
+                url: uploaded.secure_url,
+                publicId: uploaded.public_id,
+                type: uploaded.resource_type?.toUpperCase()
+            }
+        }
+
 
         const comment = await commentService.create(
             userId,
@@ -15,7 +34,7 @@ const create = async (req: AuthenticatedRequest, res: Response, next: NextFuncti
             targetType,
             parentId,
             content,
-            media
+            uploadedMedia ? [uploadedMedia] : []
         );
 
         return res.status(201).json({
@@ -32,10 +51,10 @@ const create = async (req: AuthenticatedRequest, res: Response, next: NextFuncti
 const getComments = async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
     try {
 
-        const { targetType, targetId, limit } = req.validated?.query;
+        const { targetType, targetId, limit, cursor } = req.validated?.query;
         const userId = req.user!.userId;
 
-        const comments = await commentService.getComments(userId, targetId, targetType);
+        const comments = await commentService.getComments(userId, targetId, targetType, cursor, limit);
 
         return res.status(200).json({
             comments,
@@ -52,9 +71,10 @@ const getCommentReplies = async (req: AuthenticatedRequest, res: Response, next:
     try {
 
         const { commentId } = req.validated?.params;
+        const { cursor, limit } = req.validated?.query;
         const userId = req.user!.userId;
 
-        const replies = await commentService.getCommentReplies(userId, commentId);
+        const replies = await commentService.getCommentReplies(userId, commentId, cursor, limit);
 
         return res.status(200).json({
             replies,
