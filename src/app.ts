@@ -1,28 +1,34 @@
-import express from "express";
+import express from 'express';
+import dotenv from "dotenv";
+import cors from "cors";
+import helmet from "helmet";
+import morgan from "morgan";
+import { errorHandler } from './middleware/error.middleware.js';
+import { registerRoutes } from "./routes/index.js";
+
+dotenv.config();
 
 const app = express();
 
-throw new Error("TEST DEPLOY");
+app.disable("x-powered-by");
 
-app.use((req, res, next) => {
-    res.header("Access-Control-Allow-Origin", "https://starli-io.vercel.app");
-    res.header("Access-Control-Allow-Credentials", "true");
-    res.header("Access-Control-Allow-Methods", "GET,POST,PUT,PATCH,DELETE,OPTIONS");
-    res.header("Access-Control-Allow-Headers", "Content-Type, Authorization");
+app.use(helmet());
 
-    if (req.method === "OPTIONS") {
-        return res.sendStatus(204);
-    }
+app.use(cors({ origin: ["http://localhost:3005", 'https://starli-io.vercel.app'], credentials: true }));
+app.options('*', cors());
 
-    next();
+app.use(express.urlencoded({ extended: true, limit: "5mb" }));
+app.use(morgan("dev"));
+app.use(express.json());
+
+app.get('/', (_, res) => { res.send("🌠 Starli is sparkling brightly") });
+
+registerRoutes(app);
+
+app.use((_, res) => {
+    res.status(404).json({ error: "Not found" });
 });
 
-app.post("/api/auth/signup", (_, res) => {
-    res.json({ ok: true });
-});
-
-app.get("/", (_, res) => {
-    res.send("WORKING");
-});
+app.use(errorHandler);
 
 export default app;
