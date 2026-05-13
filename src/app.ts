@@ -16,10 +16,12 @@ app.use(helmet());
 app.use(cors({
     origin: [
         "http://localhost:3005",
-        "https://starli-io.vercel.app"
+        'https://starli-io.vercel.app'
     ],
     credentials: true
 }));
+app.options('*', cors());  // ← add this line
+
 app.use(express.json({ limit: "5mb" }));
 app.use(express.urlencoded({ extended: true, limit: "5mb" }));
 app.use(morgan("dev"));
