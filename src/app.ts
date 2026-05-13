@@ -2,6 +2,8 @@ import express from "express";
 
 const app = express();
 
+throw new Error("TEST DEPLOY");
+
 app.use((req, res, next) => {
     res.header("Access-Control-Allow-Origin", "https://starli-io.vercel.app");
     res.header("Access-Control-Allow-Credentials", "true");
