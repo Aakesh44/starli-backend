@@ -41,11 +41,11 @@ const signup = async (email: string, password: string) => {
     const otp = generateOTP();
     const otpExpires = new Date(Date.now() + 5 * 60 * 1000);
 
-    const user = await authRepository.createUser(email, password, 'name123', tempUserName, '000000', otpExpires);
+    const user = await authRepository.createUser(email, password, 'name123', tempUserName, otp, otpExpires);
     console.log("✅✅✅✅User created:", user);
     const token = signJWT({ email: user.email }, { expiresIn: "5Mins" });
 
-    return { user: mapUserResponse(user), otp: '000000', token };
+    return { user: mapUserResponse(user), otp: otp, token };
 }
 
 const login = async (email: string, password: string) => {
